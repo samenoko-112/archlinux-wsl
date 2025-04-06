@@ -1,0 +1,60 @@
+name: Build Arch WSL Image
+
+on:
+  schedule:
+    - cron: "0 0 1 * *"
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set current date and time
+        id: datetime
+        run: echo "datetime=$(date +'%Y%m%d-%H%M%S')" >> $GITHUB_OUTPUT
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Build Docker image
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          load: true
+          tags: arch-wsl:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Export Docker image as tar
+        run: |
+          container_id=$(docker create arch-wsl:latest)
+          docker export $container_id -o arch-wsl.tar
+          docker rm $container_id
+          # Check tar file size
+          ls -lh arch-wsl.tar
+
+      - name: Create Release
+        id: create_release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: arch-wsl.tar
+          name: ArchLinux WSL Image ${{ steps.datetime.outputs.datetime }}
+          tag_name: arch-wsl-${{ steps.datetime.outputs.datetime }}
+          body: |
+            Manjaro WSL Image ${{ steps.datetime.outputs.datetime }}
+
+            ### Installation
+            1. Import to WSL with PowerShell:
+            ```powershell
+            wsl --import ArchWSL C:\path\to\store C:\path\to\arch-wsl.tar
+            ```
+
+            2. Launch the new distribution:
+            ```powershell
+            wsl -d ArchWSL
+            ```
+          draft: false
+          prerelease: false
