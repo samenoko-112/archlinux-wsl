@@ -10,7 +10,7 @@ RUN pacman-key --init && \
     pacman -S --noconfirm reflector
 
 # reflectorを使ってミラーを最適化
-RUN reflector --country Japan --age 12 --protocol https,http --sort rate --save /etc/pacman.d/mirrorlist && \
+RUN reflector --country Japan --age 12 --protocol https --sort rate --save /etc/pacman.d/mirrorlist && \
     cat /etc/pacman.d/mirrorlist
 
 # 必要なパッケージのインストール
